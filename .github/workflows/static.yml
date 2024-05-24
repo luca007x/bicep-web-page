@@ -18,5 +18,6 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Automatically provided by GitHub
           action: "upload"
-          app_location: "/"  # Folder containing your index.html
+          app_location: "/src"  # Folder containing your index.html
           output_location: "/"  # Output location ("/" for root)
+s
