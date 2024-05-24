@@ -12,25 +12,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'  # Ensure this matches your app's Node.js version
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: src  # Adjust if your app is not in the `src` directory
-
-      - name: Build the app
-        run: npm run build
-        working-directory: src  # Adjust if your app is not in the `src` directory
-
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Automatically provided by GitHub
           action: "upload"
-          app_location: "/"  # Your app's location, adjust if necessary
-          output_location: "build"  # Your app's build output location, adjust if necessary
+          app_location: "/src"  # Folder containing your index.html
+          output_location: "/"  # Output location ("/" for root)
           api_location: "api"  # Adjust if your API is located in a different directory
