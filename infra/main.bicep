@@ -9,7 +9,7 @@ param resourceGroupName string = resourceGroup().name
 
 resource staticSite 'Microsoft.Web/staticSites@2022-03-01' = {
   name: staticSiteName
-  location: 'westeurope'
+  location: location
   sku: {
     name: 'Free'
     tier: 'Free'
