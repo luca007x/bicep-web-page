@@ -7,18 +7,11 @@ param staticSiteName string
 @description('Name of the resource group.')
 param resourceGroupName string = resourceGroup().name
 
-@description('Name of the SQL Server.')
-param sqlServerName string
+@description('Name of the Function App.')
+param functionAppName string
 
-@description('Name of the SQL Database.')
-param sqlDatabaseName string
-
-@description('Administrator username for the SQL Server.')
-param adminUsername string
-
-@secure()
-@description('Administrator password for the SQL Server.')
-param adminPassword string
+@description('Storage account name for the Function App.')
+param storageAccountName string
 
 resource staticSite 'Microsoft.Web/staticSites@2022-03-01' = {
   name: staticSiteName
@@ -37,37 +30,61 @@ resource staticSite 'Microsoft.Web/staticSites@2022-03-01' = {
   }
 }
 
-resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
-  name: sqlServerName
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
+  name: storageAccountName
   location: location
-  properties: {
-    administratorLogin: adminUsername
-    administratorLoginPassword: adminPassword
-  }
   sku: {
-    name: 'Free'
+    name: 'Standard_LRS'
+    tier: 'Standard'
+  }
+  kind: 'StorageV2'
+  properties: {
+    accessTier: 'Hot'
+  }
+}
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+  name: '${functionAppName}-plan'
+  location: location
+  sku: {
+    name: 'F1'
     tier: 'Free'
   }
 }
 
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-05-01-preview' = {
-  name: '${sqlServerName}/${sqlDatabaseName}'
+resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
+  name: functionAppName
   location: location
+  kind: 'functionapp'
   properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: 5242880000
-    sampleName: 'AdventureWorksLT'
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'AzureWebJobsStorage'
+          value: storageAccount.properties.primaryEndpoints.blob
+        }
+        {
+          name: 'WEBSITE_RUN_FROM_PACKAGE'
+          value: '1'
+        }
+      ]
+    }
+    httpsOnly: true
   }
-  sku: {
-    name: 'Free'
-    tier: 'Free'
+  identity: {
+    type: 'SystemAssigned'
   }
-  dependsOn: [
-    sqlServer
-  ]
+}
+
+resource staticSiteApi 'Microsoft.Web/staticSites/functions@2022-03-01' = {
+  name: '${staticSiteName}/default'
+  properties: {
+    functionAppResourceId: functionApp.id
+  }
 }
 
 output staticSiteDefaultHostname string = staticSite.properties.defaultHostname
 output staticSiteUrl string = 'https://${staticSite.properties.defaultHostname}'
-output sqlServerNameOutput string = sqlServer.name
-output sqlDatabaseNameOutput string = sqlDatabase.name
+output functionAppNameOutput string = functionApp.name
+output functionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
