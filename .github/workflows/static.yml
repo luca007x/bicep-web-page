@@ -13,11 +13,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Deploy to Azure Static Web Apps
-        id: swa
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Automatically provided by GitHub
           action: "upload"
-          app_location: "/"  # Set to the folder with your index.html
-          output_location: "/"  # Set to the folder with your built files, if no build step, set to "/"
+          app_location: "/"  # Folder containing your index.html
+          output_location: "/"  # Output location ("/" for root)
