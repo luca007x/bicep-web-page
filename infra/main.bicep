@@ -7,12 +7,6 @@ param staticSiteName string
 @description('Name of the resource group.')
 param resourceGroupName string = resourceGroup().name
 
-@description('Name of the Function App.')
-param functionAppName string
-
-@description('Storage account name for the Function App.')
-param storageAccountName string
-
 resource staticSite 'Microsoft.Web/staticSites@2022-03-01' = {
   name: staticSiteName
   location: location
@@ -30,61 +24,26 @@ resource staticSite 'Microsoft.Web/staticSites@2022-03-01' = {
   }
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
-  name: storageAccountName
+resource sqlServer 'Microsoft.Sql/servers@2022-03-01' = {
+  name: '${staticSiteName}-sqlserver'
   location: location
-  sku: {
-    name: 'Standard_LRS'
-    tier: 'Standard'
-  }
-  kind: 'StorageV2'
   properties: {
-    accessTier: 'Hot'
+    version: '12.0'
+    administratorLogin: 'yourAdminLogin'
+    administratorLoginPassword: 'yourStrongPassword'
   }
 }
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
-  name: '${functionAppName}-plan'
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-03-01' = {
+  name: '${sqlServer.name}/${staticSiteName}-database'
   location: location
-  sku: {
-    name: 'F1'
-    tier: 'Free'
-  }
-}
-
-resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
-  name: functionAppName
-  location: location
-  kind: 'functionapp'
   properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: storageAccount.properties.primaryEndpoints.blob
-        }
-        {
-          name: 'WEBSITE_RUN_FROM_PACKAGE'
-          value: '1'
-        }
-      ]
-    }
-    httpsOnly: true
-  }
-  identity: {
-    type: 'SystemAssigned'
-  }
-}
-
-resource staticSiteApi 'Microsoft.Web/staticSites/functions@2022-03-01' = {
-  name: '${staticSiteName}/default'
-  properties: {
-    functionAppResourceId: functionApp.id
+    collation: 'SQL_Latin1_General_CP1_CI_AS'
+    edition: 'Basic'
+    maxSizeBytes: 1073741824 // 1 GB
+    requestedServiceObjectiveName: 'Basic'
   }
 }
 
 output staticSiteDefaultHostname string = staticSite.properties.defaultHostname
 output staticSiteUrl string = 'https://${staticSite.properties.defaultHostname}'
-output functionAppNameOutput string = functionApp.name
-output functionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
